@@ -862,19 +862,19 @@ Web活用の目的：${purpose}
   "headline": "診断結果の見出し（20文字以内）",
   "summary": "総合コメント（80文字程度、経営者目線で率直に）",
   "checks": [
-    { "name": "チェック項目名（10文字以内）", "status": "OK または WARN または NG", "comment": "具体的なコメント（60文字程度）" }
+    { "name": "チェック項目名（10文字以内）", "status": "OK または WARN または NG", "comment": "具体的なコメント（100〜120文字程度。なぜそう判断したか理由も含めて経営者目線で説明する）" }
   ],
-  "proposals": [ "具体的な改善提案（1〜2文、実践的な内容）" ]
+  "proposals": [ "具体的な改善提案（3〜4文。具体的な施策・数字・事例を含めた実践的な内容。経営者がすぐ動けるレベルで記載）" ]
 }
 
 checksは以下の6項目を必ず含めてください：スマホ対応、SEO基本設定、問い合わせ導線、コンテンツ更新、SNS連携、信頼・実績表示
-proposalsは3〜4件、業種・目的・お悩みに即した具体的な提案を入れてください。`;
+proposalsは3〜4件、業種・目的・お悩みに即した内容にしてください。各提案は具体的な数字や手順を含め、「なぜやるか」「どうやるか」「どんな効果があるか」の3点を意識して記載してください。`;
 
   try {
     const res = await fetch('https://site-shindan-api.yymmatsu.workers.dev', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: [{ role: 'user', content: prompt }] })
+      body: JSON.stringify({ messages: [{ role: 'user', content: prompt }], max_tokens: 2000 })
     });
 
     const data = await res.json();
