@@ -351,6 +351,23 @@ textarea { resize: vertical; min-height: 72px; }
 
 .btn-reset:hover { border-color: var(--c1); color: var(--c1); }
 
+.radar-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.04);
+}
+
+.radar-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
 .powered { text-align: center; font-size: 11px; color: var(--muted); opacity: 0.4; margin-top: 40px; font-family: 'DM Mono', monospace; }
 
 /* オーバーレイ */
@@ -711,6 +728,7 @@ textarea { resize: vertical; min-height: 72px; }
 
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
 const industryThemes = {
   '飲食業（レストラン・カフェ）': { c1:'#EA580C', c2:'#9A3412', c3:'#FFF7ED', c4:'#FB923C', bg:'#FFFAF5', label:'🍽️ 飲食・カフェ' },
@@ -917,6 +935,13 @@ function renderResult(r, company, url) {
         ${url ? `<div style="font-size:11px;color:var(--muted);margin-top:8px;font-family:'DM Mono',monospace;">${url}</div>` : ''}
       </div>
     </div>
+    <div class="radar-card">
+      <div class="card-top-bar"></div>
+      <div class="card-title">強み・弱みの可視化</div>
+      <div class="radar-wrap">
+        <canvas id="radarChart"></canvas>
+      </div>
+    </div>
     <div class="check-grid">${checksHTML}</div>
     <div class="proposal-card">
       <h3>💡 AIからの改善提案</h3>
@@ -934,6 +959,60 @@ function renderResult(r, company, url) {
 
   document.getElementById('resultArea').classList.add('active');
   window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // レーダーチャート描画
+  setTimeout(() => {
+    const scoreMap = { OK: 100, WARN: 50, NG: 10 };
+    const labels = r.checks.map(c => c.name);
+    const values = r.checks.map(c => scoreMap[c.status] || 10);
+    const c1 = getComputedStyle(document.documentElement).getPropertyValue('--c1').trim() || '#0066CC';
+    const c3 = getComputedStyle(document.documentElement).getPropertyValue('--c3').trim() || '#E8F0FB';
+
+    const ctx = document.getElementById('radarChart');
+    if (!ctx) return;
+    if (window._radarChart) window._radarChart.destroy();
+
+    window._radarChart = new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: values,
+          backgroundColor: c3 + 'CC',
+          borderColor: c1,
+          borderWidth: 2,
+          pointBackgroundColor: c1,
+          pointRadius: 4,
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          r: {
+            min: 0, max: 100,
+            ticks: { stepSize: 25, display: false },
+            grid: { color: 'rgba(0,0,0,0.06)' },
+            angleLines: { color: 'rgba(0,0,0,0.08)' },
+            pointLabels: {
+              font: { family: 'Noto Sans JP', size: 11, weight: '700' },
+              color: '#1A1A2E'
+            }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => {
+                const v = ctx.raw;
+                return v >= 100 ? '✓ 良好' : v >= 50 ? '△ 要改善' : '✗ 未対応';
+              }
+            }
+          }
+        }
+      }
+    });
+  }, 200);
 }
 
 function downloadPDF() { window.print(); }
