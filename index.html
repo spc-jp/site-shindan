@@ -3,608 +3,625 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>サイト診断AI｜Web改善レポート自動生成</title>
+<title>サイト診断AI｜Webサイト無料診断レポート</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --primary: #0179E8;
-    --primary-dark: #225AD3;
-    --accent: #00E5FF;
-    --bg: #050D1A;
-    --surface: #0B1628;
-    --surface2: #112040;
-    --border: rgba(1,121,232,0.25);
-    --text: #E8F0FF;
-    --text-muted: #7A92B8;
-    --success: #00C896;
-    --warning: #FFB800;
-    --danger: #FF4D6A;
-    --grade-a: #00C896;
-    --grade-b: #7BC67E;
-    --grade-c: #FFB800;
-    --grade-d: #FF8C42;
-    --grade-e: #FF4D6A;
-  }
-
-  * { margin:0; padding:0; box-sizing:border-box; }
-
-  body {
-    font-family: 'Noto Sans JP', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* 背景グリッド */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(1,121,232,0.06) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(1,121,232,0.06) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  /* 光源エフェクト */
-  body::after {
-    content: '';
-    position: fixed;
-    top: -200px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 800px;
-    height: 400px;
-    background: radial-gradient(ellipse, rgba(1,121,232,0.15) 0%, transparent 70%);
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .wrapper {
-    position: relative;
-    z-index: 1;
-    max-width: 860px;
-    margin: 0 auto;
-    padding: 0 20px 60px;
-  }
-
-  /* ヘッダー */
-  .header {
-    text-align: center;
-    padding: 48px 0 40px;
-    animation: fadeDown 0.6s ease both;
-  }
-
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: rgba(1,121,232,0.15);
-    border: 1px solid var(--border);
-    border-radius: 100px;
-    padding: 6px 16px;
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.1em;
-    color: var(--accent);
-    text-transform: uppercase;
-    margin-bottom: 20px;
-  }
-
-  .badge::before {
-    content: '';
-    width: 6px; height: 6px;
-    background: var(--accent);
-    border-radius: 50%;
-    box-shadow: 0 0 8px var(--accent);
-    animation: pulse 2s infinite;
-  }
-
-  h1 {
-    font-size: clamp(26px, 5vw, 38px);
-    font-weight: 900;
-    line-height: 1.3;
-    letter-spacing: -0.02em;
-    margin-bottom: 12px;
-  }
-
-  h1 span {
-    background: linear-gradient(135deg, var(--accent), var(--primary));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .subtitle {
-    font-size: 14px;
-    color: var(--text-muted);
-    font-weight: 300;
-    line-height: 1.8;
-  }
-
-  /* 入力フォームカード */
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 32px;
-    margin-bottom: 24px;
-    animation: fadeUp 0.6s ease both;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--primary), transparent);
-  }
-
-  .card-title {
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--primary);
-    margin-bottom: 24px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .card-title::before {
-    content: '';
-    width: 3px; height: 14px;
-    background: var(--primary);
-    border-radius: 2px;
-  }
-
-  .form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-  }
-
-  .form-grid .full { grid-column: 1 / -1; }
-
-  label {
-    display: block;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-muted);
-    margin-bottom: 8px;
-    letter-spacing: 0.05em;
-  }
-
-  input, select, textarea {
-    width: 100%;
-    background: var(--surface2);
-    border: 1px solid rgba(1,121,232,0.2);
-    border-radius: 10px;
-    padding: 12px 16px;
-    font-family: inherit;
-    font-size: 14px;
-    color: var(--text);
-    outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
-  }
-
-  input:focus, select:focus, textarea:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(1,121,232,0.15);
-  }
-
-  select option { background: var(--surface2); }
-
-  textarea { resize: vertical; min-height: 80px; }
-
-  /* 診断ボタン */
-  .btn-analyze {
-    width: 100%;
-    padding: 16px;
-    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
-    border: none;
-    border-radius: 12px;
-    color: white;
-    font-family: inherit;
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.3s;
-    position: relative;
-    overflow: hidden;
-    margin-top: 8px;
-    letter-spacing: 0.05em;
-  }
-
-  .btn-analyze::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
-  }
-
-  .btn-analyze:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(1,121,232,0.4);
-  }
-
-  .btn-analyze:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-  }
-
-  /* ローディング */
-  .loading {
-    display: none;
-    text-align: center;
-    padding: 48px;
-    animation: fadeUp 0.4s ease both;
-  }
-
-  .loading.active { display: block; }
-
-  .scan-ring {
-    width: 80px; height: 80px;
-    border: 2px solid rgba(1,121,232,0.2);
-    border-top-color: var(--primary);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin: 0 auto 24px;
-  }
-
-  .loading-steps {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    text-align: left;
-    max-width: 280px;
-    margin: 0 auto;
-  }
-
-  .step-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 13px;
-    color: var(--text-muted);
-    transition: color 0.3s;
-  }
-
-  .step-item.done { color: var(--success); }
-  .step-item.active { color: var(--text); }
-
-  .step-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--text-muted);
-    flex-shrink: 0;
-    transition: background 0.3s;
-  }
-
-  .step-item.done .step-dot { background: var(--success); }
-  .step-item.active .step-dot {
-    background: var(--primary);
-    box-shadow: 0 0 8px var(--primary);
-    animation: pulse 1s infinite;
-  }
-
-  /* 結果エリア */
-  .result { display: none; animation: fadeUp 0.5s ease both; }
-  .result.active { display: block; }
-
-  /* スコアヘッダー */
-  .score-header {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 32px;
-    margin-bottom: 20px;
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 32px;
-    align-items: center;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .score-header::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--primary), transparent);
-  }
-
-  .score-circle {
-    width: 100px; height: 100px;
-    border-radius: 50%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    border: 3px solid;
-    flex-shrink: 0;
-  }
-
-  .score-num {
-    font-family: 'DM Mono', monospace;
-    font-size: 32px;
-    font-weight: 500;
-    line-height: 1;
-  }
-
-  .score-label { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
-
-  .score-grade {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    padding: 2px 8px;
-    border-radius: 4px;
-    display: inline-block;
-    margin-top: 4px;
-  }
-
-  .score-info h2 {
-    font-size: 20px;
-    font-weight: 700;
-    margin-bottom: 8px;
-  }
-
-  .score-summary {
-    font-size: 14px;
-    line-height: 1.8;
-    color: var(--text-muted);
-  }
-
-  /* チェック項目グリッド */
-  .check-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 16px;
-    margin-bottom: 20px;
-  }
-
-  .check-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-    transition: border-color 0.2s;
-  }
-
-  .check-card:hover { border-color: rgba(1,121,232,0.5); }
-
-  .check-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
-  }
-
-  .check-name {
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    color: var(--text-muted);
-    text-transform: uppercase;
-  }
-
-  .check-status {
-    font-size: 11px;
-    font-weight: 700;
-    padding: 3px 10px;
-    border-radius: 20px;
-  }
-
-  .status-ok { background: rgba(0,200,150,0.15); color: var(--success); }
-  .status-warn { background: rgba(255,184,0,0.15); color: var(--warning); }
-  .status-ng { background: rgba(255,77,106,0.15); color: var(--danger); }
-
-  .check-comment {
-    font-size: 13px;
-    line-height: 1.7;
-    color: var(--text);
-  }
-
-  /* 提案セクション */
-  .proposal-card {
-    background: linear-gradient(135deg, rgba(1,121,232,0.12), rgba(34,90,211,0.08));
-    border: 1px solid rgba(1,121,232,0.35);
-    border-radius: 16px;
-    padding: 28px;
-    margin-bottom: 20px;
-  }
-
-  .proposal-card h3 {
-    font-size: 15px;
-    font-weight: 700;
-    margin-bottom: 16px;
-    color: var(--accent);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .proposal-list {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .proposal-list li {
-    display: flex;
-    gap: 12px;
-    font-size: 14px;
-    line-height: 1.7;
-    padding: 12px;
-    background: rgba(1,121,232,0.08);
-    border-radius: 8px;
-    border-left: 3px solid var(--primary);
-  }
-
-  .prop-num {
-    font-family: 'DM Mono', monospace;
-    font-size: 12px;
-    color: var(--primary);
-    font-weight: 500;
-    flex-shrink: 0;
-    padding-top: 2px;
-  }
-
-  /* CTAフッター */
-  .cta-footer {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 28px;
-    text-align: center;
-  }
-
-  .cta-footer p {
-    font-size: 14px;
-    color: var(--text-muted);
-    margin-bottom: 16px;
-    line-height: 1.8;
-  }
-
-  .cta-footer strong { color: var(--text); }
-
-  .btn-cta {
-    display: inline-block;
-    padding: 14px 32px;
-    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
-    border-radius: 10px;
-    color: white;
-    font-size: 14px;
-    font-weight: 700;
-    text-decoration: none;
-    transition: all 0.3s;
-    border: none;
-    cursor: pointer;
-    font-family: inherit;
-    margin: 0 8px 8px;
-  }
-
-  .btn-cta:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(1,121,232,0.4);
-  }
-
-  .btn-download-pdf, .btn-download-txt {
-    padding: 10px 22px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    border: 2px solid var(--primary);
-    transition: all 0.2s;
-  }
-  .btn-download-pdf {
-    background: var(--primary);
-    color: #fff;
-  }
-  .btn-download-pdf:hover {
-    background: #0056b3;
-  }
-  .btn-download-txt {
-    background: transparent;
-    color: var(--primary);
-  }
-  .btn-download-txt:hover {
-    background: var(--primary);
-    color: #fff;
-  }
-  @media print {
-    body * { visibility: hidden; }
-    #resultArea, #resultArea * { visibility: visible; }
-    #resultArea { position: absolute; left: 0; top: 0; width: 100%; }
-    .btn-cta, .btn-download-pdf, .btn-download-txt, .btn-reset { display: none !important; }
-  }
-  .btn-reset {
-    display: inline-block;
-    padding: 14px 32px;
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    color: var(--text-muted);
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    font-family: inherit;
-    transition: all 0.3s;
-    margin: 0 8px 8px;
-  }
-
-  .btn-reset:hover {
-    border-color: var(--primary);
-    color: var(--text);
-  }
-
-  /* powered by */
-  .powered {
-    text-align: center;
-    font-size: 11px;
-    color: var(--text-muted);
-    opacity: 0.5;
-    margin-top: 40px;
-    font-family: 'DM Mono', monospace;
-    letter-spacing: 0.05em;
-  }
-
-  /* アニメーション */
-  @keyframes fadeDown {
-    from { opacity: 0; transform: translateY(-20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
-
-  @media (max-width: 600px) {
-    .form-grid { grid-template-columns: 1fr; }
-    .form-grid .full { grid-column: 1; }
-    .score-header { grid-template-columns: 1fr; text-align: center; justify-items: center; }
-    .check-grid { grid-template-columns: 1fr; }
-    .card { padding: 20px; }
-  }
+:root {
+  --c1: #0066CC;
+  --c2: #003F8A;
+  --c3: #E8F0FB;
+  --c4: #0066CC;
+  --bg: #F4F8FF;
+  --surface: #FFFFFF;
+  --surface2: #F0F5FF;
+  --border: #E2EAF4;
+  --text: #1A1A2E;
+  --muted: #6B7A99;
+  --success: #059669;
+  --warning: #D97706;
+  --danger: #DC2626;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  transition: background 0.4s;
+}
+
+.top-gradient {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--c2), var(--c1), var(--c4));
+  z-index: 200;
+  transition: background 0.4s;
+}
+
+.top-nav {
+  position: sticky;
+  top: 4px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 54px;
+  background: rgba(255,255,255,0.94);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 12px rgba(0,0,0,0.04);
+}
+
+.nav-logo { display: flex; align-items: center; gap: 10px; }
+
+.nav-logo-icon {
+  width: 28px; height: 28px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, var(--c2), var(--c1));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  transition: background 0.4s;
+}
+
+.nav-logo-text { font-size: 13px; font-weight: 900; color: var(--text); letter-spacing: -0.01em; }
+.nav-logo-text span { color: var(--c1); transition: color 0.4s; }
+.nav-actions { display: flex; gap: 8px; }
+
+.nav-btn {
+  display: flex; align-items: center; gap: 5px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+  transition: all 0.2s;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--muted);
+}
+
+.nav-btn:hover { border-color: var(--c1); color: var(--c1); background: var(--c3); }
+
+.wrapper { max-width: 820px; margin: 0 auto; padding: 32px 20px 80px; }
+
+.page-header { text-align: center; padding: 32px 0 28px; }
+
+.industry-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+  margin-bottom: 16px;
+  background: var(--c3); color: var(--c1);
+  border: 1px solid rgba(0,0,0,0.06);
+  transition: all 0.4s;
+}
+
+.industry-chip-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--c1);
+  transition: background 0.4s;
+  animation: pulse 2s infinite;
+}
+
+.page-header h1 {
+  font-size: clamp(24px, 4.5vw, 36px);
+  font-weight: 900; line-height: 1.3;
+  letter-spacing: -0.02em; margin-bottom: 12px;
+}
+
+.page-header h1 span {
+  background: linear-gradient(135deg, var(--c2), var(--c1));
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  transition: background 0.4s;
+}
+
+.page-header p { font-size: 14px; color: var(--muted); line-height: 1.8; font-weight: 300; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.04);
+  transition: background 0.4s, border-color 0.4s;
+}
+
+.card-top-bar {
+  height: 3px;
+  background: linear-gradient(90deg, var(--c2), var(--c1));
+  margin: -28px -28px 24px;
+  border-radius: 16px 16px 0 0;
+  transition: background 0.4s;
+}
+
+.card-title {
+  font-size: 12px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--c1); margin-bottom: 20px;
+  display: flex; align-items: center; gap: 8px;
+  transition: color 0.4s;
+}
+
+.card-title::before {
+  content: '';
+  width: 3px; height: 14px;
+  background: linear-gradient(180deg, var(--c2), var(--c1));
+  border-radius: 2px;
+  transition: background 0.4s;
+}
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-grid .full { grid-column: 1 / -1; }
+
+label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+
+input, select, textarea {
+  width: 100%;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 14px;
+  font-family: inherit; font-size: 14px; color: var(--text);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.4s;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--c1);
+  box-shadow: 0 0 0 3px var(--c3);
+}
+
+textarea { resize: vertical; min-height: 72px; }
+
+.btn-analyze {
+  width: 100%; padding: 16px;
+  background: linear-gradient(135deg, var(--c2), var(--c1));
+  border: none; border-radius: 12px;
+  color: white; font-family: inherit;
+  font-size: 16px; font-weight: 700;
+  cursor: pointer; transition: all 0.3s;
+  margin-top: 8px; letter-spacing: 0.03em;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+  position: relative; overflow: hidden;
+}
+
+.btn-analyze::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+}
+
+.btn-analyze:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,0.18); }
+.btn-analyze:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.loading { display: none; text-align: center; padding: 48px 28px; }
+.loading.active { display: block; }
+
+.scan-ring {
+  width: 60px; height: 60px;
+  border: 3px solid var(--c3);
+  border-top-color: var(--c1);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 20px;
+  transition: border-color 0.4s;
+}
+
+.loading-steps { display: flex; flex-direction: column; gap: 10px; text-align: left; max-width: 260px; margin: 0 auto; }
+
+.step-item { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); transition: color 0.3s; }
+.step-item.done { color: var(--success); }
+.step-item.active { color: var(--text); font-weight: 600; }
+
+.step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); flex-shrink: 0; transition: background 0.3s; }
+.step-item.done .step-dot { background: var(--success); }
+.step-item.active .step-dot { background: var(--c1); animation: pulse 1s infinite; transition: background 0.4s; }
+
+.result { display: none; }
+.result.active { display: block; }
+
+.score-header {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 28px; margin-bottom: 16px;
+  display: grid; grid-template-columns: auto 1fr; gap: 28px;
+  align-items: center; position: relative; overflow: hidden;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.04);
+}
+
+.score-header::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 4px;
+  background: linear-gradient(90deg, var(--c2), var(--c1));
+  transition: background 0.4s;
+}
+
+.score-bg-blob {
+  position: absolute; right: -60px; top: -60px;
+  width: 220px; height: 220px; border-radius: 50%;
+  background: var(--c3); opacity: 0.4;
+  transition: background 0.4s;
+}
+
+.score-circle {
+  width: 96px; height: 96px; border-radius: 50%;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  border: 3px solid; flex-shrink: 0;
+  position: relative; z-index: 1;
+  background: var(--surface);
+}
+
+.score-num { font-family: 'DM Mono', monospace; font-size: 30px; font-weight: 500; line-height: 1; }
+.score-label { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.score-grade { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; padding: 2px 8px; border-radius: 4px; display: inline-block; margin-top: 4px; }
+.score-info { position: relative; z-index: 1; }
+.score-info h2 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+.score-summary { font-size: 14px; line-height: 1.8; color: var(--muted); }
+
+.check-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 16px; }
+
+.check-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 16px;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.check-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); border-color: var(--c1); }
+
+.check-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.check-name { font-size: 12px; font-weight: 700; color: var(--text); }
+.check-status { font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 20px; }
+.status-ok { background: rgba(5,150,105,0.1); color: var(--success); }
+.status-warn { background: rgba(217,119,6,0.1); color: var(--warning); }
+.status-ng { background: rgba(220,38,38,0.1); color: var(--danger); }
+.check-comment { font-size: 13px; line-height: 1.7; color: var(--muted); }
+
+.proposal-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 24px; margin-bottom: 16px;
+  position: relative; overflow: hidden;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.04);
+}
+
+.proposal-card::before {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  background: linear-gradient(180deg, var(--c2), var(--c1));
+  transition: background 0.4s;
+}
+
+.proposal-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 16px; color: var(--c1); display: flex; align-items: center; gap: 8px; transition: color 0.4s; }
+.proposal-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+
+.proposal-list li {
+  display: flex; gap: 12px; font-size: 13px; line-height: 1.7;
+  padding: 12px; background: var(--surface2); border-radius: 8px;
+  border-left: 3px solid var(--c1);
+  transition: background 0.4s, border-color 0.4s;
+}
+
+.prop-num { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--c1); font-weight: 700; flex-shrink: 0; padding-top: 2px; transition: color 0.4s; }
+
+.cta-footer {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 28px; text-align: center;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.04);
+}
+
+.cta-footer p { font-size: 14px; color: var(--muted); margin-bottom: 20px; line-height: 1.8; }
+.cta-footer strong { color: var(--text); }
+
+.btn-cta {
+  display: inline-block; padding: 13px 28px;
+  background: linear-gradient(135deg, var(--c2), var(--c1));
+  border-radius: 10px; color: white; font-size: 14px; font-weight: 700;
+  border: none; cursor: pointer; font-family: inherit;
+  margin: 0 6px 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  transition: all 0.3s;
+}
+
+.btn-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+
+.btn-download-pdf, .btn-download-txt {
+  padding: 10px 20px; border-radius: 8px;
+  font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s; font-family: inherit;
+}
+
+.btn-download-pdf { background: var(--c1); color: #fff; border: none; }
+.btn-download-pdf:hover { opacity: 0.85; }
+.btn-download-txt { background: transparent; color: var(--c1); border: 2px solid var(--c1); }
+.btn-download-txt:hover { background: var(--c3); }
+
+.btn-reset {
+  display: inline-block; padding: 12px 28px;
+  background: transparent; border: 1px solid var(--border);
+  border-radius: 10px; color: var(--muted);
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  font-family: inherit; transition: all 0.2s; margin: 8px 6px 0;
+}
+
+.btn-reset:hover { border-color: var(--c1); color: var(--c1); }
+
+.powered { text-align: center; font-size: 11px; color: var(--muted); opacity: 0.4; margin-top: 40px; font-family: 'DM Mono', monospace; }
+
+/* オーバーレイ */
+.overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.25); z-index: 200; backdrop-filter: blur(4px); }
+.overlay.active { display: block; }
+
+/* サイドパネル */
+.side-panel {
+  position: fixed; top: 0; right: -420px;
+  width: 360px; max-width: 92vw; height: 100vh;
+  background: var(--surface); border-left: 1px solid var(--border);
+  z-index: 300;
+  transition: right 0.3s cubic-bezier(0.4,0,0.2,1);
+  display: flex; flex-direction: column; overflow-y: auto;
+  box-shadow: -8px 0 40px rgba(0,0,0,0.08);
+}
+
+.side-panel.active { right: 0; }
+
+.panel-header {
+  padding: 20px 20px 14px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; background: var(--surface); z-index: 1;
+}
+
+.panel-title { font-size: 14px; font-weight: 900; color: var(--text); }
+
+.panel-close {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--muted); cursor: pointer; font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+
+.panel-close:hover { background: rgba(220,38,38,0.1); border-color: var(--danger); color: var(--danger); }
+.panel-body { padding: 20px; flex: 1; }
+
+/* 使い方 */
+.howto-step { display: flex; gap: 14px; margin-bottom: 20px; }
+
+.howto-num {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--c2), var(--c1));
+  color: white; font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-family: 'DM Mono', monospace;
+  transition: background 0.4s;
+}
+
+.howto-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.howto-desc { font-size: 12px; color: var(--muted); line-height: 1.7; }
+
+.howto-note {
+  background: var(--c3); border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 10px; padding: 12px 14px;
+  font-size: 12px; color: var(--c2); line-height: 1.7; margin-top: 16px;
+  transition: background 0.4s, color 0.4s;
+}
+
+/* 設定 */
+.setting-section { margin-bottom: 24px; }
+
+.setting-label {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.15em; color: var(--c1);
+  font-family: 'DM Mono', monospace;
+  margin-bottom: 10px; text-transform: uppercase;
+  transition: color 0.4s;
+}
+
+.btn-demo {
+  width: 100%; padding: 12px;
+  background: rgba(5,150,105,0.08);
+  border: 1px solid rgba(5,150,105,0.3);
+  border-radius: 10px; color: var(--success);
+  font-size: 13px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+  transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin-bottom: 10px;
+}
+
+.btn-demo:hover { background: rgba(5,150,105,0.15); transform: translateY(-1px); }
+
+.btn-clear {
+  width: 100%; padding: 12px; background: transparent;
+  border: 1px solid rgba(220,38,38,0.25); border-radius: 10px;
+  color: rgba(220,38,38,0.7);
+  font-size: 13px; font-weight: 700;
+  cursor: pointer; font-family: inherit; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+
+.btn-clear:hover { background: rgba(220,38,38,0.06); border-color: var(--danger); color: var(--danger); }
+
+.demo-note { font-size: 10px; color: var(--muted); text-align: center; margin-top: 8px; opacity: 0.7; line-height: 1.6; }
+
+/* 確認ダイアログ */
+.confirm-dialog {
+  display: none; position: fixed; inset: 0; z-index: 500;
+  align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.2); backdrop-filter: blur(4px);
+}
+
+.confirm-dialog.active { display: flex; }
+
+.confirm-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 32px 28px;
+  max-width: 300px; width: 90%; text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+  animation: popIn 0.2s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+
+@keyframes popIn { from { opacity:0; transform:scale(0.88); } to { opacity:1; transform:scale(1); } }
+
+.confirm-icon { font-size: 36px; margin-bottom: 10px; }
+.confirm-title { font-size: 15px; font-weight: 900; color: var(--text); margin-bottom: 6px; }
+.confirm-desc { font-size: 12px; color: var(--muted); line-height: 1.7; margin-bottom: 22px; }
+.confirm-btns { display: flex; gap: 10px; }
+
+.confirm-ok {
+  flex: 1; padding: 10px; border-radius: 10px; border: none;
+  font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.2s;
+}
+
+.ok-green { background: rgba(5,150,105,0.1); color: var(--success); border: 1px solid rgba(5,150,105,0.25); }
+.ok-green:hover { background: rgba(5,150,105,0.2); }
+.ok-red { background: rgba(220,38,38,0.1); color: var(--danger); border: 1px solid rgba(220,38,38,0.25); }
+.ok-red:hover { background: rgba(220,38,38,0.18); }
+
+.confirm-cancel {
+  flex: 1; padding: 10px; border-radius: 10px;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--muted); font-size: 13px; font-weight: 700;
+  cursor: pointer; font-family: inherit; transition: all 0.2s;
+}
+
+.confirm-cancel:hover { border-color: var(--c1); color: var(--c1); }
+
+@media print {
+  .top-gradient, .top-nav, .overlay, .side-panel, .confirm-dialog { display: none !important; }
+  .btn-cta, .btn-download-pdf, .btn-download-txt, .btn-reset { display: none !important; }
+  body { background: #fff !important; }
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+@media (max-width: 600px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .form-grid .full { grid-column: 1; }
+  .score-header { grid-template-columns: 1fr; text-align: center; justify-items: center; }
+  .check-grid { grid-template-columns: 1fr; }
+  .card { padding: 20px; }
+  .top-nav { padding: 0 16px; }
+}
 </style>
 </head>
 <body>
 
+<div class="top-gradient"></div>
+
+<div class="overlay" id="overlay" onclick="closeAllPanels()"></div>
+
+<!-- 使い方パネル -->
+<div class="side-panel" id="howtoPanel">
+  <div class="panel-header">
+    <div class="panel-title">📖 使い方ガイド</div>
+    <button class="panel-close" onclick="closeAllPanels()">✕</button>
+  </div>
+  <div class="panel-body">
+    <div class="howto-step">
+      <div class="howto-num">1</div>
+      <div>
+        <div class="howto-title">業種を選択する</div>
+        <div class="howto-desc">業種を選ぶと画面のテーマカラーが自動で切り替わります。お客様の業種に合わせた雰囲気で診断できます。</div>
+      </div>
+    </div>
+    <div class="howto-step">
+      <div class="howto-num">2</div>
+      <div>
+        <div class="howto-title">診断情報を入力する</div>
+        <div class="howto-desc">会社名・目的・お悩みを入力してください。URLがなくても診断できます。</div>
+      </div>
+    </div>
+    <div class="howto-step">
+      <div class="howto-num">3</div>
+      <div>
+        <div class="howto-title">「サイトの伸びしろを見つける」を押す</div>
+        <div class="howto-desc">AIがWebサイトを多角的に分析します。通常10〜20秒で結果が表示されます。</div>
+      </div>
+    </div>
+    <div class="howto-step">
+      <div class="howto-num">4</div>
+      <div>
+        <div class="howto-title">診断レポートを確認する</div>
+        <div class="howto-desc">100点満点スコア・グレード・6項目チェック・改善提案が自動生成されます。</div>
+      </div>
+    </div>
+    <div class="howto-step">
+      <div class="howto-num">5</div>
+      <div>
+        <div class="howto-title">PDFまたはテキストで保存</div>
+        <div class="howto-desc">診断結果はPDFまたはテキストでダウンロードできます。商談資料としてご活用ください。</div>
+      </div>
+    </div>
+    <div class="howto-note">
+      💡 初めての方は「設定 ⚙️」からデモデータを入力すると、診断の流れをすぐに体験できます。
+    </div>
+  </div>
+</div>
+
+<!-- 設定パネル -->
+<div class="side-panel" id="settingPanel">
+  <div class="panel-header">
+    <div class="panel-title">⚙️ 設定</div>
+    <button class="panel-close" onclick="closeAllPanels()">✕</button>
+  </div>
+  <div class="panel-body">
+    <div class="setting-section">
+      <div class="setting-label">デモ操作</div>
+      <button class="btn-demo" onclick="confirmDemo()">✨ デモデータを入力する</button>
+      <button class="btn-clear" onclick="confirmClear()">🗑️ 入力をクリアする</button>
+      <div class="demo-note">
+        デモデータを使うと診断の流れをすぐに体験できます<br>
+        実際の診断にはお客様の情報をご入力ください
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 確認ダイアログ -->
+<div class="confirm-dialog" id="confirmDialog">
+  <div class="confirm-box">
+    <div class="confirm-icon" id="confirmIcon">✨</div>
+    <div class="confirm-title" id="confirmTitle">デモデータを入力しますか？</div>
+    <div class="confirm-desc" id="confirmDesc">現在の入力内容はデモデータに上書きされます。</div>
+    <div class="confirm-btns">
+      <button class="confirm-ok ok-green" id="confirmOkBtn" onclick="confirmExecute()">はい、実行する</button>
+      <button class="confirm-cancel" onclick="closeConfirm()">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- ナビバー -->
+<div class="top-nav">
+  <div class="nav-logo">
+    <div class="nav-logo-icon">🔍</div>
+    <div class="nav-logo-text">サイト診断<span>AI</span></div>
+  </div>
+  <div class="nav-actions">
+    <button class="nav-btn" onclick="openPanel('howtoPanel')">📖 使い方</button>
+    <button class="nav-btn" onclick="openPanel('settingPanel')">⚙️ 設定</button>
+  </div>
+</div>
+
 <div class="wrapper">
 
-  <!-- ヘッダー -->
-  <div class="header">
-    <div class="badge">AI-Powered Web Diagnosis</div>
-    <h1>ホームページ<span>無料診断レポート</span></h1>
-    <p class="subtitle">
-      URLと基本情報を入力するだけで、AIが御社のWebサイトを多角的に分析。<br>
-      改善ポイントと具体的な提案をレポートにまとめます。
-    </p>
+  <div class="page-header">
+    <div class="industry-chip" id="industryChip">
+      <div class="industry-chip-dot"></div>
+      <span id="industryChipText">業種を選択してください</span>
+    </div>
+    <h1>Webサイトの<span>伸びしろ</span>を<br>見つけます</h1>
+    <p>URLと基本情報を入力するだけで、AIが御社のWebサイトを多角的に分析。<br>改善ポイントと具体的な提案をレポートにまとめます。</p>
   </div>
 
-  <!-- 入力フォーム -->
   <div class="card" id="inputCard">
+    <div class="card-top-bar"></div>
     <div class="card-title">診断情報を入力</div>
     <div class="form-grid">
       <div class="full">
@@ -612,12 +629,12 @@
         <input type="url" id="siteUrl" placeholder="https://example.co.jp" />
       </div>
       <div>
-        <label>会社名・店舗名</label>
+        <label>会社名・店舗名 <span style="color:var(--danger)">*</span></label>
         <input type="text" id="companyName" placeholder="株式会社〇〇" />
       </div>
       <div>
-        <label>業種</label>
-        <select id="industry">
+        <label>業種 <span style="color:var(--danger)">*</span></label>
+        <select id="industry" onchange="applyIndustryTheme()">
           <option value="">選択してください</option>
           <option>飲食業（レストラン・カフェ）</option>
           <option>美容業（美容室・エステ）</option>
@@ -643,7 +660,7 @@
         </select>
       </div>
       <div>
-        <label>Web活用の主な目的</label>
+        <label>Web活用の主な目的 <span style="color:var(--danger)">*</span></label>
         <select id="purpose">
           <option value="">選択してください</option>
           <option>新規集客・問い合わせ増加</option>
@@ -655,7 +672,7 @@
         </select>
       </div>
       <div>
-        <label>現在最も困っていること</label>
+        <label>現在最も困っていること <span style="color:var(--danger)">*</span></label>
         <select id="mainProblem">
           <option value="">選択してください</option>
           <option>アクセス数が少ない・増えない</option>
@@ -673,14 +690,13 @@
       </div>
     </div>
     <button class="btn-analyze" onclick="startAnalysis()">
-      🔍 AIで無料診断する
+      🔍 サイトの伸びしろを見つける
     </button>
   </div>
 
-  <!-- ローディング -->
   <div class="card loading" id="loadingCard">
     <div class="scan-ring"></div>
-    <p style="font-size:15px;font-weight:700;margin-bottom:24px;">AIが診断中です...</p>
+    <p style="font-size:15px;font-weight:700;margin-bottom:20px;color:var(--text);">AIが診断中です...</p>
     <div class="loading-steps">
       <div class="step-item" id="step1"><div class="step-dot"></div>サイト情報を読み込み中</div>
       <div class="step-item" id="step2"><div class="step-dot"></div>業種・競合データを分析中</div>
@@ -689,13 +705,100 @@
     </div>
   </div>
 
-  <!-- 結果エリア -->
   <div class="result" id="resultArea"></div>
 
   <p class="powered">Powered by Claude AI × アイ・モバイル Web診断エンジン</p>
+
 </div>
 
 <script>
+const industryThemes = {
+  '飲食業（レストラン・カフェ）': { c1:'#EA580C', c2:'#9A3412', c3:'#FFF7ED', c4:'#FB923C', bg:'#FFFAF5', label:'🍽️ 飲食・カフェ' },
+  '美容業（美容室・エステ）':     { c1:'#DB2777', c2:'#831843', c3:'#FDF2F8', c4:'#F472B6', bg:'#FFF5FA', label:'💄 美容・サロン' },
+  '製造業・工場':                  { c1:'#334155', c2:'#1E293B', c3:'#F1F5F9', c4:'#64748B', bg:'#F8FAFC', label:'🏭 製造業・工場' },
+  '税理士・会計士事務所':          { c1:'#1D4ED8', c2:'#1E3A8A', c3:'#EFF6FF', c4:'#3B82F6', bg:'#F5F8FF', label:'📊 税理士・会計士' },
+  '医療・歯科・クリニック':        { c1:'#0284C7', c2:'#0C4A6E', c3:'#F0F9FF', c4:'#38BDF8', bg:'#F5FBFF', label:'🏥 医療・クリニック' },
+  '小売・ECショップ':              { c1:'#7C3AED', c2:'#4C1D95', c3:'#F5F3FF', c4:'#A78BFA', bg:'#FAF8FF', label:'🛍️ 小売・EC' },
+  '建設・リフォーム':              { c1:'#92400E', c2:'#78350F', c3:'#FFFBEB', c4:'#D97706', bg:'#FDFAF5', label:'🏠 建設・リフォーム' },
+  '不動産':                        { c1:'#047857', c2:'#064E3B', c3:'#ECFDF5', c4:'#10B981', bg:'#F5FBF8', label:'🏢 不動産' },
+  'IT・Web関連':                   { c1:'#2563EB', c2:'#1E40AF', c3:'#EFF6FF', c4:'#60A5FA', bg:'#F5F8FF', label:'💻 IT・Web' },
+  'その他サービス業':              { c1:'#0066CC', c2:'#003F8A', c3:'#E8F0FB', c4:'#0066CC', bg:'#F4F8FF', label:'🏪 その他サービス' }
+};
+
+function applyIndustryTheme() {
+  const val = document.getElementById('industry').value;
+  const t = industryThemes[val] || { c1:'#0066CC', c2:'#003F8A', c3:'#E8F0FB', c4:'#0066CC', bg:'#F4F8FF', label:'業種を選択してください' };
+  const r = document.documentElement;
+  r.style.setProperty('--c1', t.c1);
+  r.style.setProperty('--c2', t.c2);
+  r.style.setProperty('--c3', t.c3);
+  r.style.setProperty('--c4', t.c4);
+  r.style.setProperty('--bg', t.bg);
+  document.getElementById('industryChipText').textContent = val ? t.label : '業種を選択してください';
+}
+
+function openPanel(id) {
+  document.getElementById('overlay').classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+
+function closeAllPanels() {
+  document.getElementById('overlay').classList.remove('active');
+  document.querySelectorAll('.side-panel').forEach(p => p.classList.remove('active'));
+}
+
+let pendingAction = null;
+
+function confirmDemo() {
+  pendingAction = 'demo';
+  document.getElementById('confirmIcon').textContent = '✨';
+  document.getElementById('confirmTitle').textContent = 'デモデータを入力しますか？';
+  document.getElementById('confirmDesc').textContent = '現在の入力内容はデモデータに上書きされます。';
+  document.getElementById('confirmOkBtn').className = 'confirm-ok ok-green';
+  document.getElementById('confirmOkBtn').textContent = 'はい、入力する';
+  document.getElementById('confirmDialog').classList.add('active');
+}
+
+function confirmClear() {
+  pendingAction = 'clear';
+  document.getElementById('confirmIcon').textContent = '🗑️';
+  document.getElementById('confirmTitle').textContent = '入力内容をクリアしますか？';
+  document.getElementById('confirmDesc').textContent = '入力した内容がすべて削除されます。この操作は元に戻せません。';
+  document.getElementById('confirmOkBtn').className = 'confirm-ok ok-red';
+  document.getElementById('confirmOkBtn').textContent = 'はい、クリアする';
+  document.getElementById('confirmDialog').classList.add('active');
+}
+
+function confirmExecute() {
+  closeConfirm();
+  if (pendingAction === 'demo') fillDemo();
+  if (pendingAction === 'clear') clearForm();
+  pendingAction = null;
+}
+
+function closeConfirm() {
+  document.getElementById('confirmDialog').classList.remove('active');
+}
+
+function fillDemo() {
+  document.getElementById('siteUrl').value = 'https://example-sme.co.jp';
+  document.getElementById('companyName').value = '株式会社サンプル商事';
+  document.getElementById('industry').value = '製造業・工場';
+  document.getElementById('empSize').value = '21〜50名';
+  document.getElementById('purpose').value = '新規集客・問い合わせ増加';
+  document.getElementById('mainProblem').value = 'アクセス数が少ない・増えない';
+  document.getElementById('memo').value = '埼玉県川口市の精密部品メーカー。競合は県内に3社あり。最近採用にも力を入れたい。';
+  applyIndustryTheme();
+  closeAllPanels();
+}
+
+function clearForm() {
+  ['siteUrl','companyName','empSize','purpose','mainProblem','memo'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('industry').value = '';
+  applyIndustryTheme();
+  closeAllPanels();
+}
+
 async function startAnalysis() {
   const url = document.getElementById('siteUrl').value;
   const company = document.getElementById('companyName').value;
@@ -710,30 +813,19 @@ async function startAnalysis() {
     return;
   }
 
-  // UI切り替え
   document.getElementById('inputCard').style.display = 'none';
   document.getElementById('loadingCard').classList.add('active');
   document.getElementById('resultArea').classList.remove('active');
 
-  // ローディングアニメーション
   const steps = ['step1','step2','step3','step4'];
   let si = 0;
   const stepInterval = setInterval(() => {
-    if (si > 0) {
-      document.getElementById(steps[si-1]).classList.remove('active');
-      document.getElementById(steps[si-1]).classList.add('done');
-    }
-    if (si < steps.length) {
-      document.getElementById(steps[si]).classList.add('active');
-      si++;
-    } else {
-      clearInterval(stepInterval);
-    }
+    if (si > 0) { document.getElementById(steps[si-1]).classList.remove('active'); document.getElementById(steps[si-1]).classList.add('done'); }
+    if (si < steps.length) { document.getElementById(steps[si]).classList.add('active'); si++; }
+    else clearInterval(stepInterval);
   }, 900);
 
-  const prompt = `
-あなたはWeb制作・Webマーケティングの専門家です。
-以下の情報をもとに、中小企業のホームページ診断レポートを作成してください。
+  const prompt = `あなたはWeb制作・Webマーケティングの専門家です。以下の情報をもとに、中小企業のホームページ診断レポートを作成してください。
 
 【診断対象情報】
 会社名：${company}
@@ -752,45 +844,27 @@ Web活用の目的：${purpose}
   "headline": "診断結果の見出し（20文字以内）",
   "summary": "総合コメント（80文字程度、経営者目線で率直に）",
   "checks": [
-    {
-      "name": "チェック項目名（10文字以内）",
-      "status": "OK または WARN または NG",
-      "comment": "具体的なコメント（60文字程度）"
-    }
+    { "name": "チェック項目名（10文字以内）", "status": "OK または WARN または NG", "comment": "具体的なコメント（60文字程度）" }
   ],
-  "proposals": [
-    "具体的な改善提案（1〜2文、実践的な内容）"
-  ]
+  "proposals": [ "具体的な改善提案（1〜2文、実践的な内容）" ]
 }
 
-checksは以下の6項目を必ず含めてください：
-スマホ対応、SEO基本設定、問い合わせ導線、コンテンツ更新、SNS連携、信頼・実績表示
-
-proposalsは3〜4件、具体的かつ実践的な提案を入れてください。
-業種・目的・お悩みに即した内容にしてください。
-`;
+checksは以下の6項目を必ず含めてください：スマホ対応、SEO基本設定、問い合わせ導線、コンテンツ更新、SNS連携、信頼・実績表示
+proposalsは3〜4件、業種・目的・お悩みに即した具体的な提案を入れてください。`;
 
   try {
     const res = await fetch('https://site-shindan-api.yymmatsu.workers.dev', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }]
-      })
+      body: JSON.stringify({ messages: [{ role: 'user', content: prompt }] })
     });
 
     const data = await res.json();
     const raw = data.content.map(b => b.text || '').join('');
-    const clean = raw.replace(/```json|```/g, '').trim();
-    const result = JSON.parse(clean);
+    const result = JSON.parse(raw.replace(/```json|```/g, '').trim());
 
     clearInterval(stepInterval);
-    steps.forEach(s => {
-      document.getElementById(s).classList.remove('active');
-      document.getElementById(s).classList.add('done');
-    });
+    steps.forEach(s => { document.getElementById(s).classList.remove('active'); document.getElementById(s).classList.add('done'); });
 
     setTimeout(() => {
       document.getElementById('loadingCard').classList.remove('active');
@@ -802,31 +876,21 @@ proposalsは3〜4件、具体的かつ実践的な提案を入れてください
     document.getElementById('loadingCard').classList.remove('active');
     document.getElementById('inputCard').style.display = 'block';
     alert('診断中にエラーが発生しました。もう一度お試しください。');
-    console.error(e);
   }
 }
 
-function gradeColor(grade) {
-  const map = { A:'#00C896', B:'#7BC67E', C:'#FFB800', D:'#FF8C42', E:'#FF4D6A' };
-  return map[grade] || '#7A92B8';
+function gradeColor(g) {
+  return { A:'#059669', B:'#16A34A', C:'#D97706', D:'#EA580C', E:'#DC2626' }[g] || '#6B7A99';
 }
 
-function statusClass(status) {
-  if (status === 'OK') return 'status-ok';
-  if (status === 'WARN') return 'status-warn';
-  return 'status-ng';
-}
-
-function statusLabel(status) {
-  if (status === 'OK') return '✓ 良好';
-  if (status === 'WARN') return '△ 要改善';
-  return '✗ 未対応';
-}
+function statusClass(s) { return s==='OK' ? 'status-ok' : s==='WARN' ? 'status-warn' : 'status-ng'; }
+function statusLabel(s) { return s==='OK' ? '✓ 良好' : s==='WARN' ? '△ 要改善' : '✗ 未対応'; }
 
 function renderResult(r, company, url) {
   window._lastResult = r;
   window._lastCompany = company;
   const color = gradeColor(r.grade);
+
   const checksHTML = r.checks.map(c => `
     <div class="check-card">
       <div class="check-header">
@@ -834,81 +898,56 @@ function renderResult(r, company, url) {
         <div class="check-status ${statusClass(c.status)}">${statusLabel(c.status)}</div>
       </div>
       <div class="check-comment">${c.comment}</div>
-    </div>
-  `).join('');
+    </div>`).join('');
 
-  const proposalsHTML = r.proposals.map((p, i) => `
-    <li><span class="prop-num">0${i+1}</span><span>${p}</span></li>
-  `).join('');
+  const proposalsHTML = r.proposals.map((p,i) => `
+    <li><span class="prop-num">0${i+1}</span><span>${p}</span></li>`).join('');
 
   document.getElementById('resultArea').innerHTML = `
     <div class="score-header">
-      <div class="score-circle" style="border-color:${color}; color:${color};">
+      <div class="score-bg-blob"></div>
+      <div class="score-circle" style="border-color:${color};color:${color};">
         <div class="score-num">${r.totalScore}</div>
         <div class="score-label">/ 100点</div>
-        <div class="score-grade" style="background:${color}22; color:${color};">GRADE ${r.grade}</div>
+        <div class="score-grade" style="background:${color}18;color:${color};">GRADE ${r.grade}</div>
       </div>
       <div class="score-info">
         <h2>${r.headline}</h2>
         <div class="score-summary">${r.summary}</div>
-        ${url ? `<div style="font-size:11px;color:var(--text-muted);margin-top:10px;font-family:'DM Mono',monospace;">${url}</div>` : ''}
+        ${url ? `<div style="font-size:11px;color:var(--muted);margin-top:8px;font-family:'DM Mono',monospace;">${url}</div>` : ''}
       </div>
     </div>
-
     <div class="check-grid">${checksHTML}</div>
-
     <div class="proposal-card">
       <h3>💡 AIからの改善提案</h3>
       <ul class="proposal-list">${proposalsHTML}</ul>
     </div>
-
     <div class="cta-footer">
-      <p>
-        <strong>${company}</strong>のWebサイトについて、<br>
-        より詳しい改善プランをご提案できます。<br>
-        無料相談は30分、オンラインでも対応しています。
-      </p>
+      <p><strong>${company}</strong>のWebサイトについて、<br>より詳しい改善プランをご提案できます。<br>無料相談は30分、オンラインでも対応しています。</p>
       <button class="btn-cta">📞 無料相談を予約する</button>
       <div style="display:flex;gap:10px;justify-content:center;margin-top:12px;flex-wrap:wrap;">
         <button class="btn-download-pdf" onclick="downloadPDF()">📄 PDFでダウンロード</button>
         <button class="btn-download-txt" onclick="downloadTXT()">📝 テキストでダウンロード</button>
       </div>
       <button class="btn-reset" onclick="resetForm()">もう一度診断する</button>
-    </div>
-  `;
+    </div>`;
 
   document.getElementById('resultArea').classList.add('active');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function downloadPDF() {
-  window.print();
-}
+function downloadPDF() { window.print(); }
 
 function downloadTXT() {
-  const r = window._lastResult;
-  const company = window._lastCompany;
+  const r = window._lastResult, company = window._lastCompany;
   if (!r) return;
-
-  let txt = '';
-  txt += `■ Webサイト診断レポート\n`;
-  txt += `【会社名】${company}\n`;
-  txt += `【スコア】${r.totalScore}点 / GRADE ${r.grade}\n`;
-  txt += `【総評】${r.headline}\n`;
-  txt += `${r.summary}\n\n`;
-  txt += `■ 6項目チェック\n`;
-  r.checks.forEach(c => {
-    txt += `・${c.name}：${c.status}　${c.comment}\n`;
-  });
+  let txt = `■ Webサイト診断レポート\n【会社名】${company}\n【スコア】${r.totalScore}点 / GRADE ${r.grade}\n【総評】${r.headline}\n${r.summary}\n\n■ 6項目チェック\n`;
+  r.checks.forEach(c => { txt += `・${c.name}：${c.status}　${c.comment}\n`; });
   txt += `\n■ AIからの改善提案\n`;
-  r.proposals.forEach((p, i) => {
-    txt += `0${i+1}. ${p}\n`;
-  });
+  r.proposals.forEach((p,i) => { txt += `0${i+1}. ${p}\n`; });
   txt += `\n診断日時：${new Date().toLocaleString('ja-JP')}\n`;
-
-  const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
+  a.href = URL.createObjectURL(new Blob([txt], { type: 'text/plain;charset=utf-8' }));
   a.download = `サイト診断レポート_${company}.txt`;
   a.click();
 }
@@ -917,11 +956,7 @@ function resetForm() {
   document.getElementById('resultArea').classList.remove('active');
   document.getElementById('resultArea').innerHTML = '';
   document.getElementById('inputCard').style.display = 'block';
-  // ローディングのステップをリセット
-  ['step1','step2','step3','step4'].forEach(s => {
-    const el = document.getElementById(s);
-    el.classList.remove('active','done');
-  });
+  ['step1','step2','step3','step4'].forEach(s => document.getElementById(s).classList.remove('active','done'));
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 </script>
