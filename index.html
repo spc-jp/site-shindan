@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>サイト診断AI｜Web改善レポート自動生成</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #0179E8;
+    --primary-dark: #225AD3;
+    --accent: #00E5FF;
+    --bg: #050D1A;
+    --surface: #0B1628;
+    --surface2: #112040;
+    --border: rgba(1,121,232,0.25);
+    --text: #E8F0FF;
+    --text-muted: #7A92B8;
+    --success: #00C896;
+    --warning: #FFB800;
+    --danger: #FF4D6A;
+    --grade-a: #00C896;
+    --grade-b: #7BC67E;
+    --grade-c: #FFB800;
+    --grade-d: #FF8C42;
+    --grade-e: #FF4D6A;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* 背景グリッド */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(1,121,232,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(1,121,232,0.06) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* 光源エフェクト */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 400px;
+    background: radial-gradient(ellipse, rgba(1,121,232,0.15) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 20px 60px;
+  }
+
+  /* ヘッダー */
+  .header {
+    text-align: center;
+    padding: 48px 0 40px;
+    animation: fadeDown 0.6s ease both;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(1,121,232,0.15);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--accent);
+    animation: pulse 2s infinite;
+  }
+
+  h1 {
+    font-size: clamp(26px, 5vw, 38px);
+    font-weight: 900;
+    line-height: 1.3;
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+  }
+
+  h1 span {
+    background: linear-gradient(135deg, var(--accent), var(--primary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: 300;
+    line-height: 1.8;
+  }
+
+  /* 入力フォームカード */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 24px;
+    animation: fadeUp 0.6s ease both;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+  }
+
+  .card-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--primary);
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-title::before {
+    content: '';
+    width: 3px; height: 14px;
+    background: var(--primary);
+    border-radius: 2px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .form-grid .full { grid-column: 1 / -1; }
+
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    letter-spacing: 0.05em;
+  }
+
+  input, select, textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid rgba(1,121,232,0.2);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(1,121,232,0.15);
+  }
+
+  select option { background: var(--surface2); }
+
+  textarea { resize: vertical; min-height: 80px; }
+
+  /* 診断ボタン */
+  .btn-analyze {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+    margin-top: 8px;
+    letter-spacing: 0.05em;
+  }
+
+  .btn-analyze::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+  }
+
+  .btn-analyze:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(1,121,232,0.4);
+  }
+
+  .btn-analyze:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* ローディング */
+  .loading {
+    display: none;
+    text-align: center;
+    padding: 48px;
+    animation: fadeUp 0.4s ease both;
+  }
+
+  .loading.active { display: block; }
+
+  .scan-ring {
+    width: 80px; height: 80px;
+    border: 2px solid rgba(1,121,232,0.2);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 24px;
+  }
+
+  .loading-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    text-align: left;
+    max-width: 280px;
+    margin: 0 auto;
+  }
+
+  .step-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--text-muted);
+    transition: color 0.3s;
+  }
+
+  .step-item.done { color: var(--success); }
+  .step-item.active { color: var(--text); }
+
+  .step-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    flex-shrink: 0;
+    transition: background 0.3s;
+  }
+
+  .step-item.done .step-dot { background: var(--success); }
+  .step-item.active .step-dot {
+    background: var(--primary);
+    box-shadow: 0 0 8px var(--primary);
+    animation: pulse 1s infinite;
+  }
+
+  /* 結果エリア */
+  .result { display: none; animation: fadeUp 0.5s ease both; }
+  .result.active { display: block; }
+
+  /* スコアヘッダー */
+  .score-header {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 20px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 32px;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .score-header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+  }
+
+  .score-circle {
+    width: 100px; height: 100px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid;
+    flex-shrink: 0;
+  }
+
+  .score-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 32px;
+    font-weight: 500;
+    line-height: 1;
+  }
+
+  .score-label { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+  .score-grade {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 2px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-top: 4px;
+  }
+
+  .score-info h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .score-summary {
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text-muted);
+  }
+
+  /* チェック項目グリッド */
+  .check-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .check-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    transition: border-color 0.2s;
+  }
+
+  .check-card:hover { border-color: rgba(1,121,232,0.5); }
+
+  .check-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .check-name {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  .check-status {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+
+  .status-ok { background: rgba(0,200,150,0.15); color: var(--success); }
+  .status-warn { background: rgba(255,184,0,0.15); color: var(--warning); }
+  .status-ng { background: rgba(255,77,106,0.15); color: var(--danger); }
+
+  .check-comment {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text);
+  }
+
+  /* 提案セクション */
+  .proposal-card {
+    background: linear-gradient(135deg, rgba(1,121,232,0.12), rgba(34,90,211,0.08));
+    border: 1px solid rgba(1,121,232,0.35);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 20px;
+  }
+
+  .proposal-card h3 {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .proposal-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .proposal-list li {
+    display: flex;
+    gap: 12px;
+    font-size: 14px;
+    line-height: 1.7;
+    padding: 12px;
+    background: rgba(1,121,232,0.08);
+    border-radius: 8px;
+    border-left: 3px solid var(--primary);
+  }
+
+  .prop-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--primary);
+    font-weight: 500;
+    flex-shrink: 0;
+    padding-top: 2px;
+  }
+
+  /* CTAフッター */
+  .cta-footer {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    text-align: center;
+  }
+
+  .cta-footer p {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    line-height: 1.8;
+  }
+
+  .cta-footer strong { color: var(--text); }
+
+  .btn-cta {
+    display: inline-block;
+    padding: 14px 32px;
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+    border-radius: 10px;
+    color: white;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.3s;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    margin: 0 8px 8px;
+  }
+
+  .btn-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(1,121,232,0.4);
+  }
+
+  .btn-reset {
+    display: inline-block;
+    padding: 14px 32px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.3s;
+    margin: 0 8px 8px;
+  }
+
+  .btn-reset:hover {
+    border-color: var(--primary);
+    color: var(--text);
+  }
+
+  /* powered by */
+  .powered {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-muted);
+    opacity: 0.5;
+    margin-top: 40px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.05em;
+  }
+
+  /* アニメーション */
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  @media (max-width: 600px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .form-grid .full { grid-column: 1; }
+    .score-header { grid-template-columns: 1fr; text-align: center; justify-items: center; }
+    .check-grid { grid-template-columns: 1fr; }
+    .card { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrapper">
+
+  <!-- ヘッダー -->
+  <div class="header">
+    <div class="badge">AI-Powered Web Diagnosis</div>
+    <h1>ホームページ<span>無料診断レポート</span></h1>
+    <p class="subtitle">
+      URLと基本情報を入力するだけで、AIが御社のWebサイトを多角的に分析。<br>
+      改善ポイントと具体的な提案をレポートにまとめます。
+    </p>
+  </div>
+
+  <!-- 入力フォーム -->
+  <div class="card" id="inputCard">
+    <div class="card-title">診断情報を入力</div>
+    <div class="form-grid">
+      <div class="full">
+        <label>ホームページURL（任意）</label>
+        <input type="url" id="siteUrl" placeholder="https://example.co.jp" />
+      </div>
+      <div>
+        <label>会社名・店舗名</label>
+        <input type="text" id="companyName" placeholder="株式会社〇〇" />
+      </div>
+      <div>
+        <label>業種</label>
+        <select id="industry">
+          <option value="">選択してください</option>
+          <option>飲食業（レストラン・カフェ）</option>
+          <option>美容業（美容室・エステ）</option>
+          <option>製造業・工場</option>
+          <option>税理士・会計士事務所</option>
+          <option>医療・歯科・クリニック</option>
+          <option>小売・ECショップ</option>
+          <option>建設・リフォーム</option>
+          <option>不動産</option>
+          <option>IT・Web関連</option>
+          <option>その他サービス業</option>
+        </select>
+      </div>
+      <div>
+        <label>従業員規模</label>
+        <select id="empSize">
+          <option value="">選択してください</option>
+          <option>1〜5名</option>
+          <option>6〜20名</option>
+          <option>21〜50名</option>
+          <option>51〜100名</option>
+          <option>101名以上</option>
+        </select>
+      </div>
+      <div>
+        <label>Web活用の主な目的</label>
+        <select id="purpose">
+          <option value="">選択してください</option>
+          <option>新規集客・問い合わせ増加</option>
+          <option>採用・求人応募の増加</option>
+          <option>ブランディング・信頼向上</option>
+          <option>既存顧客へのリピート促進</option>
+          <option>商品・サービスの販売</option>
+          <option>地域での認知度向上</option>
+        </select>
+      </div>
+      <div>
+        <label>現在最も困っていること</label>
+        <select id="mainProblem">
+          <option value="">選択してください</option>
+          <option>アクセス数が少ない・増えない</option>
+          <option>問い合わせが来ない</option>
+          <option>サイトが古い・スマホ対応していない</option>
+          <option>SNSとの連携ができていない</option>
+          <option>更新が止まっている</option>
+          <option>競合と差別化できていない</option>
+          <option>採用応募が来ない</option>
+        </select>
+      </div>
+      <div class="full">
+        <label>その他・補足（任意）</label>
+        <textarea id="memo" placeholder="競合他社名、地域、特記事項など自由にご記入ください"></textarea>
+      </div>
+    </div>
+    <button class="btn-analyze" onclick="startAnalysis()">
+      🔍 AIで無料診断する
+    </button>
+  </div>
+
+  <!-- ローディング -->
+  <div class="card loading" id="loadingCard">
+    <div class="scan-ring"></div>
+    <p style="font-size:15px;font-weight:700;margin-bottom:24px;">AIが診断中です...</p>
+    <div class="loading-steps">
+      <div class="step-item" id="step1"><div class="step-dot"></div>サイト情報を読み込み中</div>
+      <div class="step-item" id="step2"><div class="step-dot"></div>業種・競合データを分析中</div>
+      <div class="step-item" id="step3"><div class="step-dot"></div>改善ポイントを抽出中</div>
+      <div class="step-item" id="step4"><div class="step-dot"></div>提案レポートを生成中</div>
+    </div>
+  </div>
+
+  <!-- 結果エリア -->
+  <div class="result" id="resultArea"></div>
+
+  <p class="powered">Powered by Claude AI × アイ・モバイル Web診断エンジン</p>
+</div>
+
+<script>
+async function startAnalysis() {
+  const url = document.getElementById('siteUrl').value;
+  const company = document.getElementById('companyName').value;
+  const industry = document.getElementById('industry').value;
+  const empSize = document.getElementById('empSize').value;
+  const purpose = document.getElementById('purpose').value;
+  const problem = document.getElementById('mainProblem').value;
+  const memo = document.getElementById('memo').value;
+
+  if (!company || !industry || !purpose || !problem) {
+    alert('会社名・業種・目的・お困りごとは必須です');
+    return;
+  }
+
+  // UI切り替え
+  document.getElementById('inputCard').style.display = 'none';
+  document.getElementById('loadingCard').classList.add('active');
+  document.getElementById('resultArea').classList.remove('active');
+
+  // ローディングアニメーション
+  const steps = ['step1','step2','step3','step4'];
+  let si = 0;
+  const stepInterval = setInterval(() => {
+    if (si > 0) {
+      document.getElementById(steps[si-1]).classList.remove('active');
+      document.getElementById(steps[si-1]).classList.add('done');
+    }
+    if (si < steps.length) {
+      document.getElementById(steps[si]).classList.add('active');
+      si++;
+    } else {
+      clearInterval(stepInterval);
+    }
+  }, 900);
+
+  const prompt = `
+あなたはWeb制作・Webマーケティングの専門家です。
+以下の情報をもとに、中小企業のホームページ診断レポートを作成してください。
+
+【診断対象情報】
+会社名：${company}
+サイトURL：${url || '未提出（未開設または不明）'}
+業種：${industry}
+従業員規模：${empSize}
+Web活用の目的：${purpose}
+主なお悩み：${problem}
+補足：${memo || 'なし'}
+
+以下の形式で、必ずJSON形式のみで返答してください。余計なテキストは不要です。
+
+{
+  "totalScore": 数値(0-100),
+  "grade": "A/B/C/D/E のいずれか",
+  "headline": "診断結果の見出し（20文字以内）",
+  "summary": "総合コメント（80文字程度、経営者目線で率直に）",
+  "checks": [
+    {
+      "name": "チェック項目名（10文字以内）",
+      "status": "OK または WARN または NG",
+      "comment": "具体的なコメント（60文字程度）"
+    }
+  ],
+  "proposals": [
+    "具体的な改善提案（1〜2文、実践的な内容）"
+  ]
+}
+
+checksは以下の6項目を必ず含めてください：
+スマホ対応、SEO基本設定、問い合わせ導線、コンテンツ更新、SNS連携、信頼・実績表示
+
+proposalsは3〜4件、具体的かつ実践的な提案を入れてください。
+業種・目的・お悩みに即した内容にしてください。
+`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const data = await res.json();
+    const raw = data.content.map(b => b.text || '').join('');
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(clean);
+
+    clearInterval(stepInterval);
+    steps.forEach(s => {
+      document.getElementById(s).classList.remove('active');
+      document.getElementById(s).classList.add('done');
+    });
+
+    setTimeout(() => {
+      document.getElementById('loadingCard').classList.remove('active');
+      renderResult(result, company, url);
+    }, 600);
+
+  } catch(e) {
+    clearInterval(stepInterval);
+    document.getElementById('loadingCard').classList.remove('active');
+    document.getElementById('inputCard').style.display = 'block';
+    alert('診断中にエラーが発生しました。もう一度お試しください。');
+    console.error(e);
+  }
+}
+
+function gradeColor(grade) {
+  const map = { A:'#00C896', B:'#7BC67E', C:'#FFB800', D:'#FF8C42', E:'#FF4D6A' };
+  return map[grade] || '#7A92B8';
+}
+
+function statusClass(status) {
+  if (status === 'OK') return 'status-ok';
+  if (status === 'WARN') return 'status-warn';
+  return 'status-ng';
+}
+
+function statusLabel(status) {
+  if (status === 'OK') return '✓ 良好';
+  if (status === 'WARN') return '△ 要改善';
+  return '✗ 未対応';
+}
+
+function renderResult(r, company, url) {
+  const color = gradeColor(r.grade);
+  const checksHTML = r.checks.map(c => `
+    <div class="check-card">
+      <div class="check-header">
+        <div class="check-name">${c.name}</div>
+        <div class="check-status ${statusClass(c.status)}">${statusLabel(c.status)}</div>
+      </div>
+      <div class="check-comment">${c.comment}</div>
+    </div>
+  `).join('');
+
+  const proposalsHTML = r.proposals.map((p, i) => `
+    <li><span class="prop-num">0${i+1}</span><span>${p}</span></li>
+  `).join('');
+
+  document.getElementById('resultArea').innerHTML = `
+    <div class="score-header">
+      <div class="score-circle" style="border-color:${color}; color:${color};">
+        <div class="score-num">${r.totalScore}</div>
+        <div class="score-label">/ 100点</div>
+        <div class="score-grade" style="background:${color}22; color:${color};">GRADE ${r.grade}</div>
+      </div>
+      <div class="score-info">
+        <h2>${r.headline}</h2>
+        <div class="score-summary">${r.summary}</div>
+        ${url ? `<div style="font-size:11px;color:var(--text-muted);margin-top:10px;font-family:'DM Mono',monospace;">${url}</div>` : ''}
+      </div>
+    </div>
+
+    <div class="check-grid">${checksHTML}</div>
+
+    <div class="proposal-card">
+      <h3>💡 AIからの改善提案</h3>
+      <ul class="proposal-list">${proposalsHTML}</ul>
+    </div>
+
+    <div class="cta-footer">
+      <p>
+        <strong>${company}</strong>のWebサイトについて、<br>
+        より詳しい改善プランをご提案できます。<br>
+        無料相談は30分、オンラインでも対応しています。
+      </p>
+      <button class="btn-cta">📞 無料相談を予約する</button>
+      <button class="btn-reset" onclick="resetForm()">もう一度診断する</button>
+    </div>
+  `;
+
+  document.getElementById('resultArea').classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function resetForm() {
+  document.getElementById('resultArea').classList.remove('active');
+  document.getElementById('resultArea').innerHTML = '';
+  document.getElementById('inputCard').style.display = 'block';
+  // ローディングのステップをリセット
+  ['step1','step2','step3','step4'].forEach(s => {
+    const el = document.getElementById(s);
+    el.classList.remove('active','done');
+  });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
