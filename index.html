@@ -499,6 +499,36 @@
     box-shadow: 0 6px 20px rgba(1,121,232,0.4);
   }
 
+  .btn-download-pdf, .btn-download-txt {
+    padding: 10px 22px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 2px solid var(--primary);
+    transition: all 0.2s;
+  }
+  .btn-download-pdf {
+    background: var(--primary);
+    color: #fff;
+  }
+  .btn-download-pdf:hover {
+    background: #0056b3;
+  }
+  .btn-download-txt {
+    background: transparent;
+    color: var(--primary);
+  }
+  .btn-download-txt:hover {
+    background: var(--primary);
+    color: #fff;
+  }
+  @media print {
+    body * { visibility: hidden; }
+    #resultArea, #resultArea * { visibility: visible; }
+    #resultArea { position: absolute; left: 0; top: 0; width: 100%; }
+    .btn-cta, .btn-download-pdf, .btn-download-txt, .btn-reset { display: none !important; }
+  }
   .btn-reset {
     display: inline-block;
     padding: 14px 32px;
@@ -794,6 +824,8 @@ function statusLabel(status) {
 }
 
 function renderResult(r, company, url) {
+  window._lastResult = r;
+  window._lastCompany = company;
   const color = gradeColor(r.grade);
   const checksHTML = r.checks.map(c => `
     <div class="check-card">
@@ -837,12 +869,48 @@ function renderResult(r, company, url) {
         無料相談は30分、オンラインでも対応しています。
       </p>
       <button class="btn-cta">📞 無料相談を予約する</button>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:12px;flex-wrap:wrap;">
+        <button class="btn-download-pdf" onclick="downloadPDF()">📄 PDFでダウンロード</button>
+        <button class="btn-download-txt" onclick="downloadTXT()">📝 テキストでダウンロード</button>
+      </div>
       <button class="btn-reset" onclick="resetForm()">もう一度診断する</button>
     </div>
   `;
 
   document.getElementById('resultArea').classList.add('active');
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function downloadPDF() {
+  window.print();
+}
+
+function downloadTXT() {
+  const r = window._lastResult;
+  const company = window._lastCompany;
+  if (!r) return;
+
+  let txt = '';
+  txt += `■ Webサイト診断レポート\n`;
+  txt += `【会社名】${company}\n`;
+  txt += `【スコア】${r.totalScore}点 / GRADE ${r.grade}\n`;
+  txt += `【総評】${r.headline}\n`;
+  txt += `${r.summary}\n\n`;
+  txt += `■ 6項目チェック\n`;
+  r.checks.forEach(c => {
+    txt += `・${c.name}：${c.status}　${c.comment}\n`;
+  });
+  txt += `\n■ AIからの改善提案\n`;
+  r.proposals.forEach((p, i) => {
+    txt += `0${i+1}. ${p}\n`;
+  });
+  txt += `\n診断日時：${new Date().toLocaleString('ja-JP')}\n`;
+
+  const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `サイト診断レポート_${company}.txt`;
+  a.click();
 }
 
 function resetForm() {
