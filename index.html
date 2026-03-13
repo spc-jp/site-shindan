@@ -741,7 +741,7 @@ proposalsは3〜4件、具体的かつ実践的な提案を入れてください
 `;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('https://site-shindan-api.yymmatsu.workers.dev', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
