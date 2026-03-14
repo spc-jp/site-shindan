@@ -56,7 +56,7 @@ body {
   box-shadow: 0 1px 12px rgba(0,0,0,0.04);
 }
 
-.nav-logo { display: flex; align-items: center; gap: 10px; }
+.nav-logo { display: flex; align-items: center; gap: 10px; cursor: pointer; }
 
 .nav-logo-icon {
   width: 36px; height: 36px;
@@ -616,7 +616,7 @@ textarea { resize: vertical; min-height: 72px; }
 
 <!-- ナビバー -->
 <div class="top-nav">
-  <div class="nav-logo">
+  <div class="nav-logo" onclick="resetForm()">
     <div class="nav-logo-icon">🔍</div>
     <div class="nav-logo-text">サイト診断<span>AI</span></div>
   </div>
