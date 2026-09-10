@@ -786,6 +786,7 @@ textarea { resize: vertical; min-height: 72px; }
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
 const industryThemes = {
@@ -1123,226 +1124,47 @@ function renderResult(r, company, url, isShared = false) {
 }
 
 function downloadPDF() {
-  const company = window._lastCompany || '';
-  const r = window._lastResult;
-  if (!r) return;
+  const company = window._lastCompany || '診断レポート';
+  const btn = document.querySelector('.btn-download-pdf');
+  if (btn) { btn.textContent = '⏳ 生成中...'; btn.disabled = true; }
 
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const target = document.getElementById('resultArea');
 
-  const pageW = 210;
-  const margin = 16;
-  const contentW = pageW - margin * 2;
-  let y = 16;
+  html2canvas(target, {
+    scale: 2,
+    useCORS: true,
+    backgroundColor: '#F4F8FF',
+    logging: false,
+  }).then(canvas => {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-  // カラー設定
-  const c1 = [0, 102, 204];
-  const cText = [26, 26, 46];
-  const cMuted = [107, 122, 153];
-  const cSuccess = [5, 150, 105];
-  const cWarn = [217, 119, 6];
-  const cDanger = [220, 38, 38];
+    const pageW = 210;
+    const pageH = 297;
+    const imgW = pageW;
+    const imgH = canvas.height * imgW / canvas.width;
+    const imgData = canvas.toDataURL('image/jpeg', 0.92);
 
-  const gradeColorRgb = (g) => ({
-    A: cSuccess, B: [22, 163, 74], C: cWarn, D: [234, 88, 12], E: cDanger
-  }[g] || cMuted);
+    let posY = 0;
+    let remaining = imgH;
 
-  // ── ヘッダー ──
-  doc.setFillColor(...c1);
-  doc.rect(0, 0, pageW, 12, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Webサイト 伸びしろ診断レポート', margin, 8);
-  doc.text(new Date().toLocaleDateString('ja-JP'), pageW - margin, 8, { align: 'right' });
-
-  y = 22;
-
-  // ── 会社名 ──
-  doc.setTextColor(...cText);
-  doc.setFontSize(18);
-  doc.setFont('helvetica', 'bold');
-  doc.text(company + ' 様', margin, y);
-  y += 10;
-
-  // ── スコア帯 ──
-  const scoreColor = gradeColorRgb(r.grade);
-  doc.setFillColor(240, 245, 255);
-  doc.roundedRect(margin, y, contentW, 28, 3, 3, 'F');
-  doc.setFillColor(...scoreColor);
-  doc.circle(margin + 16, y + 14, 12, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
-  doc.text(String(r.totalScore), margin + 16, y + 12, { align: 'center' });
-  doc.setFontSize(7);
-  doc.text('/ 100', margin + 16, y + 17, { align: 'center' });
-  doc.setTextColor(...scoreColor);
-  doc.setFontSize(7);
-  doc.setFont('helvetica', 'bold');
-  doc.text('GRADE ' + r.grade, margin + 16, y + 22, { align: 'center' });
-
-  doc.setTextColor(...cText);
-  doc.setFontSize(13);
-  doc.setFont('helvetica', 'bold');
-  const headlineLines = doc.splitTextToSize(r.headline, contentW - 40);
-  doc.text(headlineLines, margin + 34, y + 10);
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(...cMuted);
-  const summaryLines = doc.splitTextToSize(r.summary, contentW - 40);
-  doc.text(summaryLines, margin + 34, y + 18);
-  y += 34;
-
-  // ── 6項目チェック ──
-  doc.setFillColor(...c1);
-  doc.rect(margin, y, 3, 6, 'F');
-  doc.setTextColor(...c1);
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.text('6項目チェック', margin + 6, y + 5);
-  y += 10;
-
-  const statusColor = (s) => s === 'OK' ? cSuccess : s === 'WARN' ? cWarn : cDanger;
-  const statusLabel = (s) => s === 'OK' ? '✓ 良好' : s === 'WARN' ? '△ 要改善' : '✗ 未対応';
-
-  r.checks.forEach((c, i) => {
-    if (y > 260) { doc.addPage(); y = 16; }
-
-    doc.setFillColor(248, 250, 252);
-    const commentLines = doc.splitTextToSize(c.comment, contentW - 50);
-    const cardH = 8 + commentLines.length * 4.5;
-    doc.roundedRect(margin, y, contentW, cardH, 2, 2, 'F');
-
-    const sc = statusColor(c.status);
-    doc.setFillColor(...sc);
-    doc.roundedRect(margin + contentW - 22, y + 2.5, 20, 5, 1, 1, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'bold');
-    doc.text(statusLabel(c.status), margin + contentW - 12, y + 6, { align: 'center' });
-
-    doc.setTextColor(...cText);
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.text(c.name, margin + 4, y + 6);
-
-    doc.setTextColor(...cMuted);
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.text(commentLines, margin + 4, y + 11);
-
-    y += cardH + 3;
-  });
-
-  y += 4;
-
-  // ── 伸びしろ改善提案 ──
-  if (y > 240) { doc.addPage(); y = 16; }
-
-  doc.setFillColor(...c1);
-  doc.rect(margin, y, 3, 6, 'F');
-  doc.setTextColor(...c1);
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.text('伸びしろ改善提案', margin + 6, y + 5);
-  y += 10;
-
-  r.proposals.forEach((p, i) => {
-    if (y > 260) { doc.addPage(); y = 16; }
-
-    const lines = doc.splitTextToSize(p, contentW - 14);
-    const cardH = 8 + lines.length * 4.5;
-
-    doc.setFillColor(232, 240, 251);
-    doc.roundedRect(margin, y, contentW, cardH, 2, 2, 'F');
-    doc.setFillColor(...c1);
-    doc.circle(margin + 6, y + cardH / 2, 3.5, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'bold');
-    doc.text(String(i + 1), margin + 6, y + cardH / 2 + 2, { align: 'center' });
-
-    doc.setTextColor(...cText);
-    doc.setFontSize(8.5);
-    doc.setFont('helvetica', 'normal');
-    doc.text(lines, margin + 14, y + 6);
-
-    y += cardH + 3;
-  });
-
-  y += 6;
-
-  // ── CTAセクション ──
-  if (y > 220) { doc.addPage(); y = 16; }
-
-  doc.setFillColor(232, 240, 251);
-  doc.roundedRect(margin, y, contentW, 42, 3, 3, 'F');
-
-  doc.setTextColor(...cText);
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'bold');
-  doc.text(company + 'のWebサイトについて、', margin + 4, y + 8);
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(...cMuted);
-  doc.text('より詳しい改善プランをご提案できます。', margin + 4, y + 15);
-  doc.text('ご相談は30分、オンラインでも対応しています。', margin + 4, y + 21);
-
-  // QRコード（Google Charts API）
-  const qrUrl = 'https://chart.googleapis.com/chart?chs=80x80&cht=qr&chl=' + encodeURIComponent('https://www.smileplusctg.com/#contact') + '&choe=UTF-8';
-
-  // QRコードを非同期で取得して埋め込む
-  const qrImg = new Image();
-  qrImg.crossOrigin = 'anonymous';
-  qrImg.onload = function() {
-    const canvas = document.createElement('canvas');
-    canvas.width = 80;
-    canvas.height = 80;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(qrImg, 0, 0, 80, 80);
-    const qrData = canvas.toDataURL('image/png');
-    doc.addImage(qrData, 'PNG', pageW - margin - 30, y + 4, 28, 28);
-    doc.setTextColor(...cMuted);
-    doc.setFontSize(7);
-    doc.text('お問い合わせ', pageW - margin - 16, y + 35, { align: 'center' });
-    doc.text('フォームはこちら', pageW - margin - 16, y + 39, { align: 'center' });
-
-    y += 50;
-
-    // ── フッター ──
-    doc.setDrawColor(...c1);
-    doc.line(margin, y, pageW - margin, y);
-    y += 5;
-    doc.setTextColor(...cMuted);
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.text('考えるを、ひとりにしない｜SPC Smile Plus Consulting', margin, y);
-    doc.text('spc@smileplusctg.com', pageW - margin, y, { align: 'right' });
+    while (remaining > 0) {
+      if (posY > 0) doc.addPage();
+      const sliceH = Math.min(remaining, pageH);
+      doc.addImage(imgData, 'JPEG', 0, -posY, imgW, imgH);
+      posY += pageH;
+      remaining -= sliceH;
+    }
 
     doc.save(`伸びしろ診断レポート_${company}.pdf`);
-  };
 
-  qrImg.onerror = function() {
-    // QRコード取得失敗時はURLテキストで代替
-    doc.setTextColor(...c1);
-    doc.setFontSize(7);
-    doc.text('https://www.smileplusctg.com/#contact', pageW - margin - 4, y + 15, { align: 'right' });
-
-    y += 50;
-    doc.setDrawColor(...c1);
-    doc.line(margin, y, pageW - margin, y);
-    y += 5;
-    doc.setTextColor(...cMuted);
-    doc.setFontSize(8);
-    doc.text('考えるを、ひとりにしない｜SPC Smile Plus Consulting', margin, y);
-    doc.text('spc@smileplusctg.com', pageW - margin, y, { align: 'right' });
-    doc.save(`伸びしろ診断レポート_${company}.pdf`);
-  };
-
-  qrImg.src = qrUrl;
+    if (btn) { btn.textContent = '📄 PDFでダウンロード'; btn.disabled = false; }
+  }).catch(e => {
+    alert('PDF生成に失敗しました。
+' + e.message);
+    if (btn) { btn.textContent = '📄 PDFでダウンロード'; btn.disabled = false; }
+  });
 }
-
 async function shareResult() {
   const btn = document.getElementById('shareBtn');
   const r = window._lastResult;
