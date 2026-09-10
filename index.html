@@ -357,6 +357,42 @@ textarea { resize: vertical; min-height: 72px; }
 
 .btn-reset:hover { border-color: var(--c1); color: var(--c1); }
 
+.btn-share {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  background: transparent;
+  color: var(--c1);
+  border: 2px solid var(--c1);
+}
+.btn-share:hover { background: var(--c3); }
+.btn-share.loading { opacity: 0.6; cursor: not-allowed; }
+
+/* 印刷専用ヘッダー */
+.print-header {
+  display: none;
+  padding: 20px 0 16px;
+  border-bottom: 2px solid var(--c1);
+  margin-bottom: 20px;
+}
+
+.print-company {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.print-date {
+  font-size: 12px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+}
+
 .radar-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -517,8 +553,19 @@ textarea { resize: vertical; min-height: 72px; }
 
 @media print {
   .top-gradient, .top-nav, .overlay, .side-panel, .confirm-dialog { display: none !important; }
-  .btn-cta, .btn-download-pdf, .btn-download-txt, .btn-reset { display: none !important; }
+  .btn-cta, .btn-download-pdf, .btn-download-txt, .btn-share, .btn-reset { display: none !important; }
+  #shareResult { display: none !important; }
   body { background: #fff !important; }
+  .page-header { display: none !important; }
+  .inputCard { display: none !important; }
+  .print-header { display: block !important; }
+  .page-header h1 span {
+    background: none !important;
+    -webkit-background-clip: unset !important;
+    background-clip: unset !important;
+    -webkit-text-fill-color: #0066CC !important;
+    color: #0066CC !important;
+  }
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -960,12 +1007,25 @@ function renderResult(r, company, url) {
       <h3>💡 AIからの改善提案</h3>
       <ul class="proposal-list">${proposalsHTML}</ul>
     </div>
+    <div class="print-header">
+      <div class="print-company">${company} 様</div>
+      <div class="print-date">診断日時：${new Date().toLocaleString('ja-JP')}</div>
+    </div>
     <div class="cta-footer">
       <p><strong>${company}</strong>のWebサイトについて、<br>より詳しい改善プランをご提案できます。<br>無料相談は30分、オンラインでも対応しています。</p>
       <button class="btn-cta">📞 無料相談を予約する</button>
       <div style="display:flex;gap:10px;justify-content:center;margin-top:12px;flex-wrap:wrap;">
         <button class="btn-download-pdf" onclick="downloadPDF()">📄 PDFでダウンロード</button>
-        <button class="btn-download-txt" onclick="downloadTXT()">📝 テキストでダウンロード</button>
+        <button class="btn-download-txt" onclick="downloadTXT()">📝 テキストで保存</button>
+        <button class="btn-share" id="shareBtn" onclick="shareResult()">🔗 URLで共有</button>
+      </div>
+      <div id="shareResult" style="display:none;margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);">
+        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">📋 共有URL</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input id="shareUrl" type="text" readonly style="flex:1;font-size:12px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:'DM Mono',monospace;">
+          <button onclick="copyShareUrl()" style="padding:8px 14px;background:var(--c1);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">コピー</button>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px;">このURLをメールに貼り付けてお客様に送れます。有効期限：30日間</div>
       </div>
       <button class="btn-reset" onclick="resetForm()">もう一度診断する</button>
     </div>`;
@@ -1028,7 +1088,54 @@ function renderResult(r, company, url) {
   }, 200);
 }
 
-function downloadPDF() { window.print(); }
+function downloadPDF() {
+  const company = window._lastCompany || '';
+  const original = document.title;
+  document.title = company + '｜Webサイト診断レポート';
+  window.print();
+  setTimeout(() => { document.title = original; }, 1000);
+}
+
+async function shareResult() {
+  const btn = document.getElementById('shareBtn');
+  const r = window._lastResult;
+  const company = window._lastCompany;
+  if (!r) return;
+
+  btn.textContent = '⏳ 生成中...';
+  btn.classList.add('loading');
+  btn.disabled = true;
+
+  try {
+    const payload = { company, result: r, created: new Date().toISOString() };
+    const res = await fetch('https://site-shindan-api.yymmatsu.workers.dev/share', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.id) {
+      const shareUrl = `https://spc-jp.github.io/site-shindan/?r=${data.id}`;
+      document.getElementById('shareUrl').value = shareUrl;
+      document.getElementById('shareResult').style.display = 'block';
+    } else {
+      alert('共有URLの生成に失敗しました。');
+    }
+  } catch(e) {
+    alert('共有URLの生成に失敗しました。\n' + e.message);
+  } finally {
+    btn.textContent = '🔗 URLで共有';
+    btn.classList.remove('loading');
+    btn.disabled = false;
+  }
+}
+
+function copyShareUrl() {
+  const url = document.getElementById('shareUrl').value;
+  navigator.clipboard.writeText(url).then(() => {
+    alert('URLをコピーしました！\nメールに貼り付けてお客様に送ってください。');
+  });
+}
 
 function downloadTXT() {
   const r = window._lastResult, company = window._lastCompany;
@@ -1051,6 +1158,40 @@ function resetForm() {
   ['step1','step2','step3','step4'].forEach(s => document.getElementById(s).classList.remove('active','done'));
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
+// 共有URLで開いた場合に結果を自動表示
+window.addEventListener('DOMContentLoaded', async () => {
+  const params = new URLSearchParams(window.location.search);
+  const rid = params.get('r');
+  if (!rid) return;
+
+  document.getElementById('inputCard').style.display = 'none';
+  document.getElementById('loadingCard').classList.add('active');
+
+  try {
+    const res = await fetch(`https://site-shindan-api.yymmatsu.workers.dev/share/${rid}`);
+    const data = await res.json();
+    if (data.result) {
+      document.getElementById('loadingCard').classList.remove('active');
+
+      // 業種テーマを適用
+      if (data.result.industry) {
+        const sel = document.getElementById('industry');
+        sel.value = data.result.industry;
+        applyIndustryTheme();
+      }
+
+      renderResult(data.result, data.company || '');
+    } else {
+      document.getElementById('loadingCard').classList.remove('active');
+      document.getElementById('inputCard').style.display = 'block';
+      alert('診断結果が見つからないか、有効期限切れです。');
+    }
+  } catch(e) {
+    document.getElementById('loadingCard').classList.remove('active');
+    document.getElementById('inputCard').style.display = 'block';
+  }
+});
 </script>
 </body>
 </html>
