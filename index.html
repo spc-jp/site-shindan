@@ -1013,7 +1013,7 @@ function renderResult(r, company, url) {
     </div>
     <div class="cta-footer">
       <p><strong>${company}</strong>のWebサイトについて、<br>より詳しい改善プランをご提案できます。<br>無料相談は30分、オンラインでも対応しています。</p>
-      <button class="btn-cta">📞 無料相談を予約する</button>
+      <a href="mailto:spc@smileplusctg.com?subject=Webサイト無料相談のご依頼&body=お名前：%0A会社名：${encodeURIComponent(company)}%0AWebサイト：%0Aご相談内容：" class="btn-cta" style="text-decoration:none;">📞 無料相談を予約する</a>
       <div style="display:flex;gap:10px;justify-content:center;margin-top:12px;flex-wrap:wrap;">
         <button class="btn-download-pdf" onclick="downloadPDF()">📄 PDFでダウンロード</button>
         <button class="btn-download-txt" onclick="downloadTXT()">📝 テキストで保存</button>
