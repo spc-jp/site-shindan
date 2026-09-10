@@ -1032,7 +1032,7 @@ function renderResult(r, company, url, isShared = false) {
     </div>
     <div class="print-header">
       <div class="print-company">${company} 様</div>
-      <div class="print-date">診断日時：${new Date().toLocaleString('ja-JP')}</div>
+      <div class="print-date">診断日：${new Date().toLocaleDateString('ja-JP')}</div>
     </div>
     <div class="cta-footer">
       <p><strong>${company}</strong>のWebサイトについて、<br>より詳しい改善プランをご提案できます。<br>無料相談は30分、オンラインでも対応しています。</p>
@@ -1173,7 +1173,7 @@ function downloadTXT() {
   r.checks.forEach(c => { txt += `・${c.name}：${c.status}　${c.comment}\n`; });
   txt += `\n■ 伸びしろ改善提案\n`;
   r.proposals.forEach((p,i) => { txt += `0${i+1}. ${p}\n`; });
-  txt += `\n診断日時：${new Date().toLocaleString('ja-JP')}\n`;
+  txt += `\n診断日：${new Date().toLocaleDateString('ja-JP')}\n`;
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([txt], { type: 'text/plain;charset=utf-8' }));
   a.download = `伸びしろ診断レポート_${company}.txt`;
