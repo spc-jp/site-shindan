@@ -1124,46 +1124,126 @@ function renderResult(r, company, url, isShared = false) {
 }
 
 function downloadPDF() {
-  const company = window._lastCompany || '診断レポート';
-  const btn = document.querySelector('.btn-download-pdf');
-  if (btn) { btn.textContent = '⏳ 生成中...'; btn.disabled = true; }
+  const company = window._lastCompany || '';
+  const r = window._lastResult;
+  if (!r) return;
 
-  const target = document.getElementById('resultArea');
+  const gradeColor = (g) => ({A:'#059669',B:'#16A34A',C:'#D97706',D:'#EA580C',E:'#DC2626'}[g]||'#6B7A99');
+  const statusClass = (s) => s==='OK'?'ok':s==='WARN'?'warn':'ng';
+  const statusLabel = (s) => s==='OK'?'✓ 良好':s==='WARN'?'△ 要改善':'✗ 未対応';
+  const color = gradeColor(r.grade);
+  const date = new Date().toLocaleDateString('ja-JP');
 
-  html2canvas(target, {
-    scale: 2,
-    useCORS: true,
-    backgroundColor: '#F4F8FF',
-    logging: false,
-  }).then(canvas => {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const checksHTML = r.checks.map(c => `
+    <div class="check-card">
+      <div class="check-head">
+        <span class="check-name">${c.name}</span>
+        <span class="check-badge ${statusClass(c.status)}">${statusLabel(c.status)}</span>
+      </div>
+      <div class="check-comment">${c.comment}</div>
+    </div>`).join('');
 
-    const pageW = 210;
-    const pageH = 297;
-    const imgW = pageW;
-    const imgH = canvas.height * imgW / canvas.width;
-    const imgData = canvas.toDataURL('image/jpeg', 0.92);
+  const proposalsHTML = r.proposals.map((p,i) => `
+    <div class="proposal-item">
+      <div class="prop-num">0${i+1}</div>
+      <div class="prop-text">${p}</div>
+    </div>`).join('');
 
-    let posY = 0;
-    let remaining = imgH;
+  const html = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>${company}｜Webサイト伸びしろ診断レポート</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Noto Sans JP',sans-serif; background:#fff; color:#1A1A2E; font-size:13px; line-height:1.7; }
+.header { background:#0066CC; color:#fff; padding:10px 20px; display:flex; justify-content:space-between; align-items:center; }
+.header-title { font-size:14px; font-weight:700; }
+.header-date { font-size:12px; }
+.body { padding:20px; max-width:800px; margin:0 auto; }
+.company { font-size:20px; font-weight:900; margin:16px 0 20px; color:#1A1A2E; }
+.score-box { background:#F0F5FF; border-radius:12px; padding:20px; display:flex; align-items:center; gap:20px; margin-bottom:20px; }
+.score-circle { width:80px; height:80px; border-radius:50%; border:3px solid ${color}; display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; }
+.score-num { font-size:26px; font-weight:900; color:${color}; line-height:1; }
+.score-pt { font-size:10px; color:#6B7A99; }
+.score-grade { font-size:10px; font-weight:700; color:${color}; background:${color}18; padding:2px 8px; border-radius:4px; margin-top:3px; }
+.score-info h2 { font-size:17px; font-weight:900; margin-bottom:6px; }
+.score-summary { font-size:13px; color:#6B7A99; }
+.section-title { font-size:13px; font-weight:700; color:#0066CC; margin:20px 0 10px; display:flex; align-items:center; gap:8px; }
+.section-title::before { content:''; display:inline-block; width:3px; height:14px; background:#0066CC; border-radius:2px; }
+.check-card { background:#F8FAFC; border-radius:10px; padding:12px 14px; margin-bottom:10px; }
+.check-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+.check-name { font-weight:700; font-size:13px; }
+.check-badge { font-size:11px; font-weight:700; padding:2px 10px; border-radius:20px; }
+.ok { background:#ECFDF5; color:#059669; }
+.warn { background:#FFFBEB; color:#D97706; }
+.ng { background:#FEF2F2; color:#DC2626; }
+.check-comment { font-size:12px; color:#6B7A99; }
+.proposal-item { display:flex; gap:12px; background:#E8F0FB; border-radius:10px; padding:12px 14px; margin-bottom:10px; }
+.prop-num { font-size:11px; font-weight:700; color:#0066CC; flex-shrink:0; padding-top:2px; }
+.prop-text { font-size:12px; color:#1A1A2E; }
+.cta-box { background:#E8F0FB; border-radius:12px; padding:20px; margin-top:24px; display:flex; justify-content:space-between; align-items:center; }
+.cta-text h3 { font-size:15px; font-weight:900; margin-bottom:6px; }
+.cta-text p { font-size:12px; color:#6B7A99; }
+.qr-wrap { text-align:center; flex-shrink:0; }
+.qr-wrap img { width:80px; height:80px; }
+.qr-label { font-size:10px; color:#6B7A99; margin-top:4px; }
+.footer { margin-top:20px; padding-top:12px; border-top:1px solid #E2EAF4; display:flex; justify-content:space-between; font-size:10px; color:#6B7A99; }
+@media print {
+  @page { margin:10mm; size:A4; }
+  body { print-color-adjust:exact; -webkit-print-color-adjust:exact; }
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-title">Webサイト伸びしろ診断レポート</div>
+  <div class="header-date">診断日：${date}</div>
+</div>
+<div class="body">
+  <div class="company">${company} 様</div>
+  <div class="score-box">
+    <div class="score-circle">
+      <div class="score-num">${r.totalScore}</div>
+      <div class="score-pt">/ 100点</div>
+      <div class="score-grade">GRADE ${r.grade}</div>
+    </div>
+    <div class="score-info">
+      <h2>${r.headline}</h2>
+      <div class="score-summary">${r.summary}</div>
+    </div>
+  </div>
+  <div class="section-title">6項目チェック</div>
+  ${checksHTML}
+  <div class="section-title">伸びしろ改善提案</div>
+  ${proposalsHTML}
+  <div class="cta-box">
+    <div class="cta-text">
+      <h3>${company}のWebサイトについて、</h3>
+      <p>より詳しい改善プランをご提案できます。<br>ご相談は30分、オンラインでも対応しています。</p>
+    </div>
+    <div class="qr-wrap">
+      <img src="https://chart.googleapis.com/chart?chs=80x80&cht=qr&chl=https%3A%2F%2Fwww.smileplusctg.com%2F%23contact&choe=UTF-8" alt="QR">
+      <div class="qr-label">お問い合わせ<br>フォームはこちら</div>
+    </div>
+  </div>
+  <div class="footer">
+    <span>考えるを、ひとりにしない｜SPC Smile Plus Consulting</span>
+    <span>spc@smileplusctg.com</span>
+  </div>
+</div>
+<script>
+  window.onload = function() {
+    setTimeout(() => { window.print(); }, 800);
+  };
+<\/script>
+</body>
+</html>`;
 
-    while (remaining > 0) {
-      if (posY > 0) doc.addPage();
-      const sliceH = Math.min(remaining, pageH);
-      doc.addImage(imgData, 'JPEG', 0, -posY, imgW, imgH);
-      posY += pageH;
-      remaining -= sliceH;
-    }
-
-    doc.save(`伸びしろ診断レポート_${company}.pdf`);
-
-    if (btn) { btn.textContent = '📄 PDFでダウンロード'; btn.disabled = false; }
-  }).catch(e => {
-    alert('PDF生成に失敗しました。
-' + e.message);
-    if (btn) { btn.textContent = '📄 PDFでダウンロード'; btn.disabled = false; }
-  });
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
 }
 async function shareResult() {
   const btn = document.getElementById('shareBtn');
