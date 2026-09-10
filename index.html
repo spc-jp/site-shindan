@@ -884,6 +884,12 @@ proposalsは3〜4件、業種・目的・お悩みに即した内容にしてく
     });
 
     const data = await res.json();
+    console.log('APIレスポンス:', JSON.stringify(data).slice(0, 500));
+
+    if (!data.content) {
+      throw new Error('APIエラー: ' + JSON.stringify(data).slice(0, 200));
+    }
+
     const raw = data.content.map(b => b.text || '').join('');
     const result = JSON.parse(raw.replace(/```json|```/g, '').trim());
 
